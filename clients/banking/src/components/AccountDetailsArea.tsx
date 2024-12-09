@@ -45,6 +45,7 @@ export const AccountDetailsArea = ({
 
   const tabs = useMemo(
     () => [
+      // keep this commented out as iban is handled in Assoconnect App
       // {
       //   label: t("accountDetails.iban.tab"),
       //   url: Router.AccountDetailsIban({ accountMembershipId }),
@@ -86,9 +87,8 @@ export const AccountDetailsArea = ({
           />
 
           {match(route)
-            .with({ name: "AccountDetailsIban" }, () => (
-              <></>
-            ))
+            //  Keep return null as iban is handled in Assoconnect App
+            .with({ name: "AccountDetailsIban" }, () => null)
             .with({ name: "AccountDetailsVirtualIbans" }, () => (
               <>
                 <Space height={40} />
