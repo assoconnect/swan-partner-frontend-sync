@@ -218,7 +218,7 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
             </LakeButton>
 
             <LakeButton onPress={submit} color="current" grow={true}>
-              {t("common.change")}
+              {t("common.search")}
             </LakeButton>
           </LakeButtonGroup>
         ) : null}

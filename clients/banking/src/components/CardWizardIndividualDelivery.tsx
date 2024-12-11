@@ -16,6 +16,11 @@ import { CountryCCA3 } from "@swan-io/shared-business/src/constants/countries";
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { P, match } from "ts-pattern";
+import axios from 'axios';
+import {  useForm } from "@swan-io/use-form";
+import { LakeLabel } from "@swan-io/lake/src/components/LakeLabel";
+import { Item } from "@swan-io/lake/src/components/LakeSelect";
+
 import {
   CompleteAddressWithContactInput,
   GetEligibleCardMembershipsQuery,
@@ -25,6 +30,7 @@ import { t } from "../utils/i18n";
 import { validateAddressLine } from "../utils/validations";
 import { Address, CardWizardAddressForm } from "./CardWizardAddressForm";
 import { CardWizardChoosePinModal } from "./CardWizardChoosePinModal";
+import { LakeSelect } from "@swan-io/lake/src/components/LakeSelect";
 
 const styles = StyleSheet.create({
   erroredTile: {
@@ -55,6 +61,11 @@ type PropsWithAddress = {
   onSubmit: (cardDeliveryConfig: CardIndividualDeliveryConfig) => void;
 };
 
+type SuggestedAddress = {
+  address: string;
+  code: string;
+};
+
 const CardWizardIndividualDeliveryWithAddress = forwardRef<
   CardWizardIndividualDeliveryRef,
   PropsWithAddress
@@ -65,6 +76,10 @@ const CardWizardIndividualDeliveryWithAddress = forwardRef<
     );
 
   const [editingAddress, setEditingAddress] = useState<[Address, number] | null>(null);
+  const [suggestedAddresses, setSuggestedAddresses] = useState<Item<{
+    adresse: string;
+    code: string;
+  }>[]>([]);
 
   const hasSomeError = currentCardIndividualDeliveryConfig.some(config =>
     isNotNullish(validateAddressLine(config.address.addressLine1)),
@@ -81,6 +96,14 @@ const CardWizardIndividualDeliveryWithAddress = forwardRef<
     }),
     [currentCardIndividualDeliveryConfig, hasSomeError, onSubmit],
   );
+
+  const { Field } = useForm<{
+    selectedAddress: string | undefined;
+  }>({
+    selectedAddress: {
+      initialValue: undefined,
+    }
+  });
 
   return (
     <View>
@@ -157,11 +180,33 @@ const CardWizardIndividualDeliveryWithAddress = forwardRef<
             const [initialAddress, editingIndex] = editingAddress;
 
             return (
+              <>
               <CardWizardAddressForm
                 initialAddress={initialAddress}
                 onSubmit={address => {
                   setCardIndividualDeliveryConfig(
                     currentCardIndividualDeliveryConfig.map((item, index) => {
+
+                      const { addressLine1, postalCode, city} = item.address
+                      const formatedAddress = `${addressLine1} ${postalCode} ${city}`
+
+                      // filter 5 first address of response
+                      // add this address to a state
+                      // display a select with this address at bottom of the form
+
+                      axios.get('https://local.assoconnect-dev.com/services/laposte/address-control', {
+                        params: { q: formatedAddress },
+                      })
+                        .then(response => {
+                          console.log("RESPONSE !!!!", response.data.result);
+                          setSuggestedAddresses(response.data.result.slice(0, 5));
+                        })
+                        .catch(error => {
+                          console.error('Error:',  error);
+                        });                
+                    
+
+
                       if (editingIndex !== index) {
                         return item;
                       }
@@ -176,10 +221,61 @@ const CardWizardIndividualDeliveryWithAddress = forwardRef<
                       };
                     }),
                   );
-                  setEditingAddress(null);
+                  // setEditingAddress(null);
                 }}
                 onPressClose={() => setEditingAddress(null)}
               />
+              {suggestedAddresses.length > 0 && (
+                              //   <LakeSelect
+                              //   id={id}
+                              //   ref={ref}
+                              //   items={suggestedAddresses}
+                              //   value={value}
+                              //   onValueChange={(value)=> console.log(value)}
+                              // />
+                              <Field name="selectedAddress">
+                              {({ value, ref }) => (
+                                <LakeLabel
+                                  label={t("card.address.form.select")}
+                                  render={id => (
+                                    <LakeSelect
+                                      id={id}
+                                      ref={ref}
+                                      items={suggestedAddresses.map((value) => ({
+                                        value: value.code,
+                                        name: value.adresse,
+                                      }))}
+                                      value={value}
+                               onValueChange={(value)=> console.log(value)}
+                              />
+                                  )}
+                                />
+                              )}
+                            </Field>
+        )}
+              {/* {suggestedAddresses?.map((address, index) => {
+                return (
+                  <LakeButton
+                    key={index}
+                    onPress={() => {
+                      const config = members.map(member => ({
+                        member,
+                        address: {
+                          addressLine1: address.address,
+                          postalCode: address.code,
+                          city: "",
+                          country: "FRA",
+                        },
+                        choosePin: false,
+                      }));
+                      // setChoosePinModal(Option.Some(config));
+                    }}
+                  >
+                    {address.address}
+                  </LakeButton>
+                )
+            })} */}
+            </>
             );
           }
           return null;
@@ -226,6 +322,7 @@ export const CardWizardIndividualDelivery = forwardRef<CardWizardIndividualDeliv
                 setChoosePinModal(Option.Some(config));
               }}
             />
+             
           </Tile>
         )}
 
