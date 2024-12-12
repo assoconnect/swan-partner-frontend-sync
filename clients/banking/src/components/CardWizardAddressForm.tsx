@@ -105,7 +105,6 @@ onSubmit({
 
     const [selectedAddressState, setSelectedAddressState] = useState<string | undefined>(undefined);
 
-    const [selectedCountryState, setSelectedCountryState] = useState<string | undefined>(undefined);
 
     const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -148,7 +147,6 @@ onSubmit({
           setFieldValue("city", response.data.result.city);
           setFieldValue("postalCode", response.data.result.postal);
           console.log("address", address);
-          setSelectedAddressState(address);
           setFieldValue("selectedAddress", address);
         })
         .catch(error => {
@@ -187,7 +185,6 @@ onSubmit({
 
         <FieldsListener names={["country"]}>
           {() => {
-            setSelectedCountryState(getFieldValue("country"));
             return (
               <>
                 <Field name="addressLine1">
@@ -318,7 +315,9 @@ onSubmit({
                    
 
                     <Space height={32} />
-
+                    
+                    <FieldsListener names={["selectedAddress"]}>
+                    {() => (
                     <LakeButton
                       style={{
                         backgroundColor: getFieldValue("selectedAddress").length
@@ -333,6 +332,8 @@ onSubmit({
                     >
                       {t("common.confirm")}
                     </LakeButton>
+                    )}
+                    </FieldsListener>
                   </>
                 </LakeModal>
               </>
@@ -340,7 +341,9 @@ onSubmit({
           }}
         </FieldsListener>
 
-        {showButtons && getFieldValue("country") === "FRA" && (
+        <FieldsListener names={["country"]}>
+          {() => 
+        (showButtons && getFieldValue("country") === "FRA" ) ? (
           <LakeButton
             mode="secondary"
             onPress={() => {
@@ -351,9 +354,13 @@ onSubmit({
           >
             {t("common.search")}
           </LakeButton>
-        )}
+        ) : null
+      }
+        </FieldsListener>
 
-        {showButtons && getFieldValue("country") !== "FRA" ? (
+        <FieldsListener names={["country"]}>
+          {() => 
+        (showButtons && getFieldValue("country") !== "FRA") ? (
           <LakeButtonGroup>
             <LakeButton mode="secondary" onPress={onPressClose} grow={true}>
               {t("common.cancel")}
@@ -364,6 +371,7 @@ onSubmit({
             </LakeButton>
           </LakeButtonGroup>
         ) : null}
+        </FieldsListener>
       </View>
     );
   },
