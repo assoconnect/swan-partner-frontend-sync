@@ -16,6 +16,7 @@ import { CountryCCA3 } from "@swan-io/shared-business/src/constants/countries";
 import { forwardRef, useImperativeHandle, useState } from "react";
 import { StyleSheet, View } from "react-native";
 import { P, match } from "ts-pattern";
+
 import {
   CompleteAddressWithContactInput,
   GetEligibleCardMembershipsQuery,
@@ -160,8 +161,10 @@ const CardWizardIndividualDeliveryWithAddress = forwardRef<
               <CardWizardAddressForm
                 initialAddress={initialAddress}
                 onSubmit={address => {
+
                   setCardIndividualDeliveryConfig(
                     currentCardIndividualDeliveryConfig.map((item, index) => {
+
                       if (editingIndex !== index) {
                         return item;
                       }
@@ -176,6 +179,7 @@ const CardWizardIndividualDeliveryWithAddress = forwardRef<
                       };
                     }),
                   );
+
                   setEditingAddress(null);
                 }}
                 onPressClose={() => setEditingAddress(null)}
@@ -226,6 +230,7 @@ export const CardWizardIndividualDelivery = forwardRef<CardWizardIndividualDeliv
                 setChoosePinModal(Option.Some(config));
               }}
             />
+             
           </Tile>
         )}
 
