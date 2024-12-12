@@ -1,9 +1,7 @@
-import { Option } from "@swan-io/boxed";
 import { LakeButton, LakeButtonGroup } from "@swan-io/lake/src/components/LakeButton";
 import { LakeLabel } from "@swan-io/lake/src/components/LakeLabel";
-import { Item, LakeSelect } from "@swan-io/lake/src/components/LakeSelect";
+import { LakeSelect } from "@swan-io/lake/src/components/LakeSelect";
 import { LakeTextInput } from "@swan-io/lake/src/components/LakeTextInput";
-import { emptyToUndefined } from "@swan-io/lake/src/utils/nullish";
 import { CountryPicker } from "@swan-io/shared-business/src/components/CountryPicker";
 import { CountryCCA3, allCountries } from "@swan-io/shared-business/src/constants/countries";
 import { combineValidators, useForm } from "@swan-io/use-form";
@@ -71,40 +69,31 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
       },
       selectedAddress: {
         initialValue: "",
-        // validate: (value, { getFieldValue }) => {
-        //   if (!value.length && getFieldValue("country") === 'FRA') {
-        //     return "Please select an address";
-        //   }
-        // },
       },
     });
 
     const submit = useCallback(() => {
       submitForm({
-        onSuccess: (values) => {
-
-onSubmit({
-  addressLine1: values.addressLine1.isSome() ? values.addressLine1.get() : '',
-  addressLine2: values.addressLine2.isSome() ? values.addressLine2.get() : '',
-  postalCode: values.postalCode.isSome() ? values.postalCode.get() : '',
-  city: values.city.isSome() ? values.city.get() : '',
-  state: values.state.isSome() ? values.state.get() : '',
-  country: values.country.isSome() ? values.country.get() as CountryCCA3 : '' as CountryCCA3,
-});
-
+        onSuccess: values => {
+          onSubmit({
+            addressLine1: values.addressLine1.isSome() ? values.addressLine1.get() : "",
+            addressLine2: values.addressLine2.isSome() ? values.addressLine2.get() : "",
+            postalCode: values.postalCode.isSome() ? values.postalCode.get() : "",
+            city: values.city.isSome() ? values.city.get() : "",
+            state: values.state.isSome() ? values.state.get() : "",
+            country: values.country.isSome()
+              ? (values.country.get() as CountryCCA3)
+              : ("" as CountryCCA3),
+          });
         },
       });
     }, [onSubmit, submitForm]);
 
-    const [suggestedAddresses, setSuggestedAddresses] = useState<
-      Item<{
-        name: string;
-        value: string;
-      }>[]
+    const [suggestedAddresses, setSuggestedAddresses] = useState<{
+        adresse: string;
+        code: string;
+      }[]
     >([]);
-
-    const [selectedAddressState, setSelectedAddressState] = useState<string | undefined>(undefined);
-
 
     const [isModalVisible, setIsModalVisible] = useState(false);
 
@@ -290,49 +279,49 @@ onSubmit({
                   visible={isModalVisible}
                 >
                   <>
-           
-                      <Field name="selectedAddress">
-                        {({ value, ref }) => (
-                          <LakeLabel
-                            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-                            label={t("card.address.form.select" as any)}
-                            render={id => (
-                              <LakeSelect
-                                id={id}
-                                ref={ref}
-                                items={suggestedAddresses.map(value => ({
-                                  value: value.code,
-                                  name: value.adresse,
-                                }))}
-                                value={value}
-                                placeholder="Select an address"
-                                onValueChange={handleSelectAddress}
-                              />
-                            )}
-                          />
-                        )}
-                      </Field>
-                   
+                    <Field name="selectedAddress">
+                      {({ value, ref }) => (
+                        <LakeLabel
+                          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+                          label={t("card.address.form.select" as any)}
+                          render={id => (
+                            <LakeSelect
+                              id={id}
+                              ref={ref}
+                              items={suggestedAddresses.map(value => ({
+                                value: value.code,
+                                name: value.adresse,
+                              }))}
+                              value={value}
+                              placeholder="Select an address"
+                              onValueChange={handleSelectAddress}
+                            />
+                          )}
+                        />
+                      )}
+                    </Field>
 
                     <Space height={32} />
-                    
+
                     <FieldsListener names={["selectedAddress"]}>
-                    {() => (
-                    <LakeButton
-                      style={{
-                        backgroundColor: getFieldValue("selectedAddress").length
-                          ? "blue"
-                          : "lightgray",
-                        cursor: getFieldValue("selectedAddress").length ? "pointer" : "not-allowed",
-                      }}
-                      onPress={submit}
-                      disabled={getFieldValue("selectedAddress") === undefined}
-                      color="current"
-                      grow={true}
-                    >
-                      {t("common.confirm")}
-                    </LakeButton>
-                    )}
+                      {() => (
+                        <LakeButton
+                          style={{
+                            backgroundColor: getFieldValue("selectedAddress").length
+                              ? "blue"
+                              : "lightgray",
+                            cursor: getFieldValue("selectedAddress").length
+                              ? "pointer"
+                              : "not-allowed",
+                          }}
+                          onPress={submit}
+                          disabled={getFieldValue("selectedAddress") === undefined}
+                          color="current"
+                          grow={true}
+                        >
+                          {t("common.confirm")}
+                        </LakeButton>
+                      )}
                     </FieldsListener>
                   </>
                 </LakeModal>
@@ -342,35 +331,36 @@ onSubmit({
         </FieldsListener>
 
         <FieldsListener names={["country"]}>
-          {() => 
-        (showButtons && getFieldValue("country") === "FRA" ) ? (
-          <LakeButton
-            mode="secondary"
-            onPress={() => {
-              setIsModalVisible(true);
-              searchAddress();
-            }}
-            grow={true}
-          >
-            {t("common.search")}
-          </LakeButton>
-        ) : null
-      }
+          {() =>
+            showButtons && getFieldValue("country") === "FRA" ? (
+              <LakeButton
+                mode="secondary"
+                onPress={() => {
+                  setIsModalVisible(true);
+                  searchAddress();
+                }}
+                grow={true}
+              >
+                {t("common.search")}
+              </LakeButton>
+            ) : null
+          }
         </FieldsListener>
 
         <FieldsListener names={["country"]}>
-          {() => 
-        (showButtons && getFieldValue("country") !== "FRA") ? (
-          <LakeButtonGroup>
-            <LakeButton mode="secondary" onPress={onPressClose} grow={true}>
-              {t("common.cancel")}
-            </LakeButton>
+          {() =>
+            showButtons && getFieldValue("country") !== "FRA" ? (
+              <LakeButtonGroup>
+                <LakeButton mode="secondary" onPress={onPressClose} grow={true}>
+                  {t("common.cancel")}
+                </LakeButton>
 
-            <LakeButton onPress={submit} color="current">
-              {t("common.confirm")}
-            </LakeButton>
-          </LakeButtonGroup>
-        ) : null}
+                <LakeButton onPress={submit} color="current">
+                  {t("common.confirm")}
+                </LakeButton>
+              </LakeButtonGroup>
+            ) : null
+          }
         </FieldsListener>
       </View>
     );
