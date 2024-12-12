@@ -304,16 +304,8 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
                     <FieldsListener names={["selectedAddress"]}>
                       {() => (
                         <LakeButton
-                          style={{
-                            backgroundColor: getFieldValue("selectedAddress").length
-                              ? "blue"
-                              : "lightgray",
-                            cursor: getFieldValue("selectedAddress").length
-                              ? "pointer"
-                              : "not-allowed",
-                          }}
                           onPress={submit}
-                          disabled={getFieldValue("selectedAddress") === undefined}
+                          disabled={getFieldValue("selectedAddress").length === 0}
                           color="current"
                           grow={true}
                         >
