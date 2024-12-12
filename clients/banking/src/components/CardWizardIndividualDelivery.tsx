@@ -161,6 +161,7 @@ const CardWizardIndividualDeliveryWithAddress = forwardRef<
               <CardWizardAddressForm
                 initialAddress={initialAddress}
                 onSubmit={address => {
+
                   setCardIndividualDeliveryConfig(
                     currentCardIndividualDeliveryConfig.map((item, index) => {
 
@@ -178,6 +179,7 @@ const CardWizardIndividualDeliveryWithAddress = forwardRef<
                       };
                     }),
                   );
+
                   setEditingAddress(null);
                 }}
                 onPressClose={() => setEditingAddress(null)}

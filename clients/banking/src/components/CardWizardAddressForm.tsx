@@ -1,19 +1,20 @@
 import { Option } from "@swan-io/boxed";
 import { LakeButton, LakeButtonGroup } from "@swan-io/lake/src/components/LakeButton";
 import { LakeLabel } from "@swan-io/lake/src/components/LakeLabel";
+import { Item, LakeSelect } from "@swan-io/lake/src/components/LakeSelect";
 import { LakeTextInput } from "@swan-io/lake/src/components/LakeTextInput";
 import { emptyToUndefined } from "@swan-io/lake/src/utils/nullish";
 import { CountryPicker } from "@swan-io/shared-business/src/components/CountryPicker";
-import { PlacekitAddressSearchInput } from "@swan-io/shared-business/src/components/PlacekitAddressSearchInput";
 import { CountryCCA3, allCountries } from "@swan-io/shared-business/src/constants/countries";
 import { combineValidators, useForm } from "@swan-io/use-form";
 import { forwardRef, useCallback, useImperativeHandle, useState } from "react";
 import { View } from "react-native";
-import { locale, t } from "../utils/i18n";
+import { t } from "../utils/i18n";
 import { validateAddressLine, validateRequired } from "../utils/validations";
-import { LakeSelect } from "@swan-io/lake/src/components/LakeSelect";
 
-import axios from 'axios';
+import { Space } from "@swan-io/lake/src/components/Space";
+import { LakeModal } from "@swan-io/shared-business/src/components/LakeModal";
+import axios from "axios";
 
 export type Address = {
   addressLine1: string;
@@ -34,9 +35,14 @@ type Props = {
 
 export type CardWizardAddressFormRef = { submit: () => void };
 
-
-
-
+type AddressResponse = {
+  result: {
+    street1: string;
+    street2: string;
+    city: string;
+    postal: string;
+  };
+};
 
 export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>(
   ({ initialAddress, onPressClose, onSubmit, showButtons = true }: Props, ref) => {
@@ -65,78 +71,90 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
       },
       selectedAddress: {
         initialValue: "",
-        validate: validateRequired,
+        // validate: (value, { getFieldValue }) => {
+        //   if (!value.length && getFieldValue("country") === 'FRA') {
+        //     return "Please select an address";
+        //   }
+        // },
       },
     });
 
     const submit = useCallback(() => {
       submitForm({
-        onSuccess: values => {
-          const option = Option.allFromDict(values);
+        onSuccess: (values) => {
 
-          if (option.isSome()) {
-            const { addressLine2, state, country, ...rest } = option.get();
+onSubmit({
+  addressLine1: values.addressLine1.isSome() ? values.addressLine1.get() : '',
+  addressLine2: values.addressLine2.isSome() ? values.addressLine2.get() : '',
+  postalCode: values.postalCode.isSome() ? values.postalCode.get() : '',
+  city: values.city.isSome() ? values.city.get() : '',
+  state: values.state.isSome() ? values.state.get() : '',
+  country: values.country.isSome() ? values.country.get() as CountryCCA3 : '' as CountryCCA3,
+});
 
-            onSubmit({
-              ...rest,
-              addressLine2: emptyToUndefined(addressLine2),
-              state: emptyToUndefined(state),
-              country: country as CountryCCA3,
-            });
-          }
         },
       });
     }, [onSubmit, submitForm]);
 
-    const [suggestedAddresses, setSuggestedAddresses] = useState<Item<{
-      adresse: string;
-      code: string;
-    }>[]>([]);
-  
-    const [selectedAddress, setSelectedAddress] = useState<string | undefined>(undefined);
+    const [suggestedAddresses, setSuggestedAddresses] = useState<
+      Item<{
+        name: string;
+        value: string;
+      }>[]
+    >([]);
+
+    const [selectedAddressState, setSelectedAddressState] = useState<string | undefined>(undefined);
+
+    const [selectedCountryState, setSelectedCountryState] = useState<string | undefined>(undefined);
+
+    const [isModalVisible, setIsModalVisible] = useState(false);
 
     const searchAddress = () => {
-
-      console.log("Field", Field)
-
       const addressLine1 = getFieldValue("addressLine1");
       const postalCode = getFieldValue("postalCode");
       const city = getFieldValue("city");
 
-         const formatedAddress = `${addressLine1} ${postalCode} ${city}`
+      const formatedAddress = `${addressLine1} ${postalCode} ${city}`;
 
-      axios.get('https://local.assoconnect-dev.com/services/laposte/address-control', {
-        params: { q: formatedAddress },
-      })
+      axios
+        .get<AddressResponse>(
+          "https://local.assoconnect-dev.com/services/laposte/address-control",
+          {
+            params: { q: formatedAddress },
+          },
+        )
         .then(response => {
-          console.log("RESPONSE !!!!", response.data.result);
-          setSuggestedAddresses(response.data.result.slice(0, 5));
-          
+          if (Array.isArray(response.data.result)) {
+            const filteredAddresses = response.data.result.slice(0, 5);
+            setSuggestedAddresses(filteredAddresses);
+          } else {
+            console.error("Unexpected response structure:", response.data);
+          }
         })
         .catch(error => {
-          console.error('Error:',  error);
-        });                
-    
-    }
+          console.error("Error:", error);
+        });
+    };
 
     const handleSelectAddress = (address: string) => {
-      console.log("Selected address", address);
-
-      axios.get(`https://local.assoconnect-dev.com/services/laposte/address-control/${address}`)
+      axios
+        .get<AddressResponse>(
+          `https://local.assoconnect-dev.com/services/laposte/address-control/${address}`,
+        )
         .then(response => {
-      
+          console.log("address", response);
           setFieldValue("addressLine1", response.data.result.street1);
           setFieldValue("addressLine2", response.data.result.street2);
           setFieldValue("city", response.data.result.city);
           setFieldValue("postalCode", response.data.result.postal);
-          
-          setSelectedAddress(address);
+          console.log("address", address);
+          setSelectedAddressState(address);
           setFieldValue("selectedAddress", address);
         })
         .catch(error => {
-          console.error('Error:',  error);
-        });                
-    }
+          console.error("Error:", error);
+        });
+    };
 
     useImperativeHandle(
       ref,
@@ -169,6 +187,7 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
 
         <FieldsListener names={["country"]}>
           {() => {
+            setSelectedCountryState(getFieldValue("country"));
             return (
               <>
                 <Field name="addressLine1">
@@ -182,7 +201,10 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
                           error={error}
                           placeholder={t("addressInput.placeholder")}
                           value={value}
-                          onChangeText={onChange}
+                          onChangeText={value => {
+                            onChange(value);
+                            setFieldValue("selectedAddress", "");
+                          }}
                         />
                       )}
                     />
@@ -260,45 +282,84 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
                     />
                   )}
                 </Field>
+
+                <LakeModal
+                  icon="subtract-circle-regular"
+                  onPressClose={() => {
+                    setIsModalVisible(false);
+                    setFieldValue("selectedAddress", "");
+                  }}
+                  color="negative"
+                  visible={isModalVisible}
+                >
+                  <>
+           
+                      <Field name="selectedAddress">
+                        {({ value, ref }) => (
+                          <LakeLabel
+                            // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
+                            label={t("card.address.form.select" as any)}
+                            render={id => (
+                              <LakeSelect
+                                id={id}
+                                ref={ref}
+                                items={suggestedAddresses.map(value => ({
+                                  value: value.code,
+                                  name: value.adresse,
+                                }))}
+                                value={value}
+                                placeholder="Select an address"
+                                onValueChange={handleSelectAddress}
+                              />
+                            )}
+                          />
+                        )}
+                      </Field>
+                   
+
+                    <Space height={32} />
+
+                    <LakeButton
+                      style={{
+                        backgroundColor: getFieldValue("selectedAddress").length
+                          ? "blue"
+                          : "lightgray",
+                        cursor: getFieldValue("selectedAddress").length ? "pointer" : "not-allowed",
+                      }}
+                      onPress={submit}
+                      disabled={getFieldValue("selectedAddress") === undefined}
+                      color="current"
+                      grow={true}
+                    >
+                      {t("common.confirm")}
+                    </LakeButton>
+                  </>
+                </LakeModal>
               </>
             );
           }}
         </FieldsListener>
 
-        <LakeButton mode="secondary" onPress={searchAddress} grow={true}>
-              {t("common.search")}
-            </LakeButton>
+        {showButtons && getFieldValue("country") === "FRA" && (
+          <LakeButton
+            mode="secondary"
+            onPress={() => {
+              setIsModalVisible(true);
+              searchAddress();
+            }}
+            grow={true}
+          >
+            {t("common.search")}
+          </LakeButton>
+        )}
 
-          {suggestedAddresses.length > 0 &&
-            <Field name="selectedAddress">
-            {({ value, ref }) => (
-              <LakeLabel
-                label={t("card.address.form.select")}
-                render={id => (
-                  <LakeSelect
-                    id={id}
-                    ref={ref}
-                    items={suggestedAddresses.map((value) => ({
-                      value: value.code,
-                      name: value.adresse,
-                    }))}
-                    value={value}
-                    placeholder="Select an address"
-             onValueChange={handleSelectAddress}
-            />
-                )}
-              />
-            )}
-          </Field>
-  }
-
-        {showButtons && selectedAddress !== undefined ? (
+        {showButtons && getFieldValue("country") !== "FRA" ? (
           <LakeButtonGroup>
             <LakeButton mode="secondary" onPress={onPressClose} grow={true}>
               {t("common.cancel")}
             </LakeButton>
 
-            <LakeButton onPress={submit} color="current" grow={true}>
+            <LakeButton onPress={submit} color="current">
               {t("common.confirm")}
             </LakeButton>
           </LakeButtonGroup>
