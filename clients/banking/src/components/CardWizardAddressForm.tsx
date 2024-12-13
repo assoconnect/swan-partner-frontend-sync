@@ -131,7 +131,6 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
         )
         .then(response => {
           setFieldValue("addressLine1", response.data.result.street1);
-          setFieldValue("addressLine2", response.data.result.street2);
           setFieldValue("city", response.data.result.city);
           setFieldValue("postalCode", response.data.result.postal);
           setFieldValue("selectedAddress", address);
@@ -268,7 +267,6 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
                 </Field>
 
                 <LakeModal
-                  icon="subtract-circle-regular"
                   onPressClose={() => {
                     setIsModalVisible(false);
                     setFieldValue("selectedAddress", "");
