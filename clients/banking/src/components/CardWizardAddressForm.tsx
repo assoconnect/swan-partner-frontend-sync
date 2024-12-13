@@ -75,6 +75,11 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
     const submit = useCallback(() => {
       submitForm({
         onSuccess: values => {
+
+          if (!values.selectedAddress.isSome()) {
+            return 
+          }
+          
           onSubmit({
             addressLine1: values.addressLine1.isSome() ? values.addressLine1.get() : "",
             addressLine2: values.addressLine2.isSome() ? values.addressLine2.get() : "",
@@ -97,6 +102,8 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
 
     const [isModalVisible, setIsModalVisible] = useState(false);
 
+    const addressControlApiUrl = 'https://services.assoconnect.com/services/laposte/address-control'
+
     const searchAddress = () => {
       const addressLine1 = getFieldValue("addressLine1");
       const postalCode = getFieldValue("postalCode");
@@ -106,7 +113,7 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
 
       axios
         .get<AddressResponse>(
-          "https://services.assoconnect.com/services/laposte/address-control",
+          addressControlApiUrl,
           {
             params: { q: formatedAddress },
           },
@@ -127,7 +134,7 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
     const handleSelectAddress = (address: string) => {
       axios
         .get<AddressResponse>(
-          `https://services.assoconnect.com/services/laposte/address-control/${address}`,
+          `${addressControlApiUrl}/${address}`,
         )
         .then(response => {
           setFieldValue("addressLine1", response.data.result.street1);
@@ -278,8 +285,7 @@ export const CardWizardAddressForm = forwardRef<CardWizardAddressFormRef, Props>
                     <Field name="selectedAddress">
                       {({ value, ref }) => (
                         <LakeLabel
-                          // eslint-disable-next-line @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-explicit-any
-                          label={t("card.address.form.select" as any)}
+                          label={t("card.address.form.select")}
                           render={id => (
                             <LakeSelect
                               id={id}
